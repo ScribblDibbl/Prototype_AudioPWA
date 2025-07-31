@@ -3,15 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Audioaufnahme PWA</title>
+  <title>Ideenschmiede</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Audioaufnahme</h1>
-  <button id="startBtn">Aufnahme starten</button>
-  <button id="stopBtn" disabled>Stoppen</button>
-  <audio id="audioPlayback" controls></audio>
+  <h1>Ideenschmiede</h1>
+  
+  <!-- Obere Reihe: Audio-Geräte (links) und BPM (rechts) -->
+  <div class="top-controls">
+    <!-- Audio-Geräte Sektion -->
+    <div class="devices-section">
+      <h3>Audio-Geräte</h3>
+      <div class="device-row">
+        <label class="device-label">Audio Input:</label>
+        <select id="audioInputSelect" class="device-select">
+          <option value="">Gerät wird geladen...</option>
+        </select>
+      </div>
+      
+      <div class="device-row">
+        <label class="device-label">Audio Output:</label>
+        <select id="audioOutputSelect" class="device-select">
+          <option value="">Gerät wird geladen...</option>
+        </select>
+      </div>
+      
+      <div class="refresh-button-container">
+        <button id="refreshDevices" class="refresh-btn refresh-input">🔄 Aktualisieren</button>
+      </div>
+      
+      <div id="recordingStatus">Bereit für Aufnahme</div>
+    </div>
+    
+    <!-- BPM/Metronom Sektion -->
+    <div class="bpm-section">
+      <h3>🎵 Metronom</h3>
+      <div class="metronome-controls">
+        <div class="bpm-row">
+          <input type="number" id="bpmInput" min="40" max="200" value="120" class="metronome-input">
+          <span class="input-label">BPM</span>
+        </div>
+        
+        <div class="time-signature-row">
+          <select id="noteValueSelect" class="metronome-select">
+            <option value="2">♩ Halbe</option>
+            <option value="4" selected>♪ Viertel</option>
+            <option value="8">♫ Achtel</option>
+          </select>
+          
+          <input type="number" id="beatLengthInput" min="1" max="19" value="4" class="beat-input">
+          <span class="input-label">Schläge</span>
+        </div>
+        
+        <div class="metronome-status">
+          <button id="metronomeToggle" class="metronome-toggle">▶ Start</button>
+          <div id="metronomeIndicator"></div>
+          <span id="beatCounter" class="beat-counter">4/4</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Aufnahme-Station -->
+  <div class="recording-station">
+    <h3>Aufnahme-Studio</h3>
+    
+    <!-- Input Gain Control -->
+    <div class="gain-section">
+      <div class="gain-row">
+        <label class="gain-label">Input Level:</label>
+        <div id="gainMeter">
+          <div id="gainBar"></div>
+        </div>
+      </div>
+      
+      <div class="gain-row">
+        <label class="gain-label">Input Gain:</label>
+        <input type="range" id="gainSlider" min="0" max="100" value="100">
+        <span id="gainValue" class="gain-value">100%</span>
+      </div>
+    </div>
+    
+    <!-- Buttons und Waveform -->
+    <div class="recording-controls">
+      <div class="button-column">
+        <button id="startBtn">Neue Aufnahme</button>
+        <button id="stopBtn" disabled>Stoppen</button>
+      </div>
+      
+      <div class="waveform-display">
+        <label class="input-label">Audio Track:</label>
+        <div class="audio-track-row">
+          <span class="time-display">0s</span>
+          <canvas id="audioTrackCanvas" height="80"></canvas>
+          <span id="timeDisplay" class="time-display">0s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Aufnahmen Sektion -->
+  <div class="recordings-container">
+    <h3>Aufnahmen</h3>
+    <div class="recordings-layout">
+      <div class="recordings-list">
+        <ul id="recordingsList"></ul>
+      </div>
+      <div class="audio-player-section">
+        <audio id="audioPlayback" controls></audio>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
