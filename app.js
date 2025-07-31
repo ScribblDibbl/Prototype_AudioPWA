@@ -419,6 +419,11 @@ function stopRecording() {
   isRecording = false;
   isMonitoring = false;
   
+  // Metronom automatisch stoppen beim Beenden der Aufnahme
+  if (metronomeActive) {
+    stopMetronome();
+  }
+  
   // Animation stoppen
   if (animationId) {
     cancelAnimationFrame(animationId);
@@ -427,7 +432,9 @@ function stopRecording() {
   // WAV-Datei aus den aufgenommenen Chunks erstellen
   if (audioChunks.length > 0) {
     const wavBlob = createWavFromChunks(audioChunks, audioContext.sampleRate);
-    addRecordingToList(wavBlob);
+    
+    // Zwingend nach Dateinamen fragen
+    promptForRecordingName(wavBlob);
   }
   
   // Cleanup
@@ -511,8 +518,35 @@ function createWavFromChunks(audioChunks, sampleRate) {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
+// Nach Aufnahme-Namen fragen
+function promptForRecordingName(blob) {
+  let recordingName = '';
+  
+  // Schleife bis ein gültiger Name eingegeben wird
+  while (!recordingName || recordingName.trim() === '') {
+    recordingName = prompt('Bitte geben Sie einen Namen für die Aufnahme ein:', `Aufnahme_${new Date().toLocaleDateString('de-DE').replace(/\./g, '-')}`);
+    
+    // Wenn Benutzer abbricht, Standard-Namen verwenden
+    if (recordingName === null) {
+      recordingName = `Aufnahme_${Date.now()}`;
+      break;
+    }
+    
+    // Prüfen ob Name leer ist
+    if (!recordingName || recordingName.trim() === '') {
+      alert('Der Name darf nicht leer sein! Bitte geben Sie einen gültigen Namen ein.');
+    }
+  }
+  
+  // Name bereinigen (gefährliche Zeichen entfernen)
+  recordingName = recordingName.trim().replace(/[<>:"/\\|?*]/g, '_');
+  
+  // Aufnahme mit benutzerdefiniertem Namen hinzufügen
+  addRecordingToList(blob, recordingName);
+}
+
 // Aufnahme zur Liste hinzufügen
-function addRecordingToList(blob) {
+function addRecordingToList(blob, customName = null) {
   recordingCounter++;
   const timestamp = new Date().toLocaleString('de-DE');
   const url = URL.createObjectURL(blob);
@@ -522,7 +556,7 @@ function addRecordingToList(blob) {
     url: url,
     blob: blob,
     timestamp: timestamp,
-    name: `Aufnahme ${recordingCounter}`,
+    name: customName || `Aufnahme ${recordingCounter}`,
     mimeType: 'audio/wav',
     waveformData: [...waveformData]
   };
@@ -771,49 +805,91 @@ function deleteRecording(id) {
 
 // Metronom-Funktionen
 function generateMetronomeClick(frequency = 800, duration = 0.1, isAccent = false) {
-  if (!metronomeAudioContext) {
+  // AudioContext überprüfen und ggf. neu erstellen
+  if (!metronomeAudioContext || metronomeAudioContext.state === 'closed') {
     metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
   
-  const oscillator = metronomeAudioContext.createOscillator();
-  const gainNode = metronomeAudioContext.createGain();
+  // AudioContext reaktivieren falls suspended
+  if (metronomeAudioContext.state === 'suspended') {
+    metronomeAudioContext.resume().then(() => {
+      console.log('Metronom AudioContext reaktiviert');
+    }).catch(error => {
+      console.error('Fehler beim Reaktivieren des Metronom AudioContext:', error);
+      // Bei Fehler neuen Context erstellen
+      metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    });
+  }
   
-  // Akzent-Ton (erster Beat) ist höher und lauter
-  oscillator.frequency.setValueAtTime(isAccent ? 1200 : frequency, metronomeAudioContext.currentTime);
-  oscillator.type = 'sine';
-  
-  // Sanfte ADSR-Hüllkurve für knackfreien Sound
-  const now = metronomeAudioContext.currentTime;
-  const attackTime = 0.005;  // 5ms Attack
-  const decayTime = 0.02;    // 20ms Decay
-  const sustainLevel = isAccent ? 0.15 : 0.1;  // Sustain Level
-  const releaseTime = 0.03;  // 30ms Release
-  
-  // Attack: Sanft von 0 auf Peak
-  gainNode.gain.setValueAtTime(0, now);
-  gainNode.gain.linearRampToValueAtTime(isAccent ? 0.25 : 0.18, now + attackTime);
-  
-  // Decay: Von Peak auf Sustain Level
-  gainNode.gain.linearRampToValueAtTime(sustainLevel, now + attackTime + decayTime);
-  
-  // Sustain: Konstant bis Release beginnt
-  const releaseStart = now + duration - releaseTime;
-  gainNode.gain.setValueAtTime(sustainLevel, releaseStart);
-  
-  // Release: Sanft auf 0
-  gainNode.gain.linearRampToValueAtTime(0.001, releaseStart + releaseTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(metronomeAudioContext.destination);
-  
-  oscillator.start(now);
-  oscillator.stop(now + duration);
+  try {
+    const oscillator = metronomeAudioContext.createOscillator();
+    const gainNode = metronomeAudioContext.createGain();
+    
+    // Akzent-Ton (erster Beat) ist höher und lauter
+    oscillator.frequency.setValueAtTime(isAccent ? 1200 : frequency, metronomeAudioContext.currentTime);
+    oscillator.type = 'sine';
+    
+    // Sanfte ADSR-Hüllkurve für knackfreien Sound
+    const now = metronomeAudioContext.currentTime;
+    const attackTime = 0.005;  // 5ms Attack
+    const decayTime = 0.02;    // 20ms Decay
+    const sustainLevel = isAccent ? 0.15 : 0.1;  // Sustain Level
+    const releaseTime = 0.03;  // 30ms Release
+    
+    // Attack: Sanft von 0 auf Peak
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(isAccent ? 0.25 : 0.18, now + attackTime);
+    
+    // Decay: Von Peak auf Sustain Level
+    gainNode.gain.linearRampToValueAtTime(sustainLevel, now + attackTime + decayTime);
+    
+    // Sustain: Konstant bis Release beginnt
+    const releaseStart = now + duration - releaseTime;
+    gainNode.gain.setValueAtTime(sustainLevel, releaseStart);
+    
+    // Release: Sanft auf 0
+    gainNode.gain.linearRampToValueAtTime(0.001, releaseStart + releaseTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(metronomeAudioContext.destination);
+    
+    oscillator.start(now);
+    oscillator.stop(now + duration);
+  } catch (error) {
+    console.error('Fehler beim Generieren des Metronom-Clicks:', error);
+    // Bei Fehler AudioContext neu erstellen und nochmal versuchen
+    metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
 }
 
 function startMetronome() {
   if (metronomeActive) return;
   
+  // AudioContext überprüfen und ggf. neu erstellen vor dem Start
+  if (!metronomeAudioContext || metronomeAudioContext.state === 'closed') {
+    metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log('Neuer Metronom AudioContext erstellt');
+  }
+  
+  // AudioContext reaktivieren falls suspended
+  if (metronomeAudioContext.state === 'suspended') {
+    metronomeAudioContext.resume().then(() => {
+      console.log('Metronom AudioContext reaktiviert für Start');
+      // Metronom nach Reaktivierung starten
+      proceedWithMetronomeStart();
+    }).catch(error => {
+      console.error('Fehler beim Reaktivieren des Metronom AudioContext:', error);
+      // Bei Fehler neuen Context erstellen
+      metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      proceedWithMetronomeStart();
+    });
+  } else {
+    proceedWithMetronomeStart();
+  }
+}
+
+function proceedWithMetronomeStart() {
   metronomeActive = true;
   currentBeat = 1;
   
