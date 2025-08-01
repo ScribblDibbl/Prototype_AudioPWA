@@ -30,6 +30,12 @@ let metronomeAudioContext = null;
 let noteValue = 4; // 2=halbe, 4=viertel, 8=achtel
 let beatLength = 4; // Anzahl Schläge pro Takt (1-19)
 
+// IndexedDB Variablen (nur hinzugefügt, keine bestehenden Funktionen geändert)
+let db = null;
+const DB_NAME = 'AudioPWA';
+const DB_VERSION = 1;
+const STORE_NAME = 'recordings';
+
 // Canvas Setup
 function setupCanvas() {
   audioTrackCanvas = document.getElementById('audioTrackCanvas');
@@ -66,6 +72,224 @@ function resizeCanvas() {
       audioTrackContext.fillStyle = '#2c3e50';
       audioTrackContext.fillRect(0, 0, canvas.width, canvas.height);
     }
+  }
+}
+
+// ===== Export-Funktionen (NEU) =====
+async function exportAllRecordings() {
+  const exportBtn = document.getElementById('exportAllBtn');
+  
+  if (recordings.length === 0) {
+    alert('Keine Aufnahmen zum Exportieren vorhanden!');
+    return;
+  }
+  
+  // Button während Export deaktivieren
+  exportBtn.disabled = true;
+  exportBtn.textContent = '📦 Exportiere...';
+  
+  try {
+    console.log(`📦 Starte Export von ${recordings.length} Aufnahmen...`);
+    
+    // JSZip-Instanz erstellen
+    if (typeof JSZip === 'undefined') {
+      throw new Error('JSZip Bibliothek nicht geladen');
+    }
+    
+    const zip = new JSZip();
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    
+    // Alle Aufnahmen zum ZIP hinzufügen
+    for (let i = 0; i < recordings.length; i++) {
+      const recording = recordings[i];
+      const paddedIndex = String(i + 1).padStart(3, '0');
+      const fileName = `${paddedIndex}_${recording.name}.wav`;
+      
+      console.log(`📄 Füge hinzu: ${fileName}`);
+      
+      // Blob als ArrayBuffer lesen
+      const arrayBuffer = await recording.blob.arrayBuffer();
+      zip.file(fileName, arrayBuffer);
+    }
+    
+    // Info-Datei mit Aufnahmedetails hinzufügen
+    const infoText = createExportInfo();
+    zip.file('Aufnahmen_Info.txt', infoText);
+    
+    console.log('🗜️ Erstelle ZIP-Datei...');
+    
+    // ZIP generieren
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+    
+    // Download starten
+    const zipUrl = URL.createObjectURL(zipBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = zipUrl;
+    downloadLink.download = `Ideenschmiede_Export_${timestamp}.zip`;
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    
+    // URL freigeben
+    setTimeout(() => URL.revokeObjectURL(zipUrl), 1000);
+    
+    console.log('✅ Export erfolgreich abgeschlossen!');
+    
+  } catch (error) {
+    console.error('❌ Export-Fehler:', error);
+    alert(`Export fehlgeschlagen: ${error.message}`);
+  } finally {
+    // Button wieder aktivieren
+    exportBtn.disabled = false;
+    exportBtn.textContent = '📦 Alle exportieren';
+  }
+}
+
+function createExportInfo() {
+  const timestamp = new Date().toLocaleString('de-DE');
+  const totalSize = recordings.reduce((sum, rec) => sum + rec.blob.size, 0);
+  const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+  
+  let info = `Ideenschmiede - Audio Export\n`;
+  info += `============================\n\n`;
+  info += `Export-Datum: ${timestamp}\n`;
+  info += `Anzahl Aufnahmen: ${recordings.length}\n`;
+  info += `Gesamtgröße: ${totalSizeMB} MB\n\n`;
+  info += `Aufnahmen-Details:\n`;
+  info += `-----------------\n`;
+  
+  recordings.forEach((recording, index) => {
+    const paddedIndex = String(index + 1).padStart(3, '0');
+    const sizeMB = (recording.blob.size / (1024 * 1024)).toFixed(2);
+    info += `${paddedIndex}. ${recording.name}\n`;
+    info += `     Aufgenommen: ${recording.timestamp}\n`;
+    info += `     Größe: ${sizeMB} MB\n`;
+    info += `     Format: ${recording.mimeType}\n\n`;
+  });
+  
+  info += `\nHinweise:\n`;
+  info += `- Alle Dateien sind im WAV-Format\n`;
+  info += `- Dateien sind chronologisch nummeriert\n`;
+  info += `- Kompatibel mit allen gängigen Audio-Editoren\n`;
+  
+  return info;
+}
+
+function updateExportButton() {
+  const exportBtn = document.getElementById('exportAllBtn');
+  const hasRecordings = recordings.length > 0;
+  
+  exportBtn.disabled = !hasRecordings;
+  exportBtn.textContent = hasRecordings 
+    ? `📦 Alle exportieren (${recordings.length})` 
+    : '📦 Alle exportieren';
+}
+
+// ===== IndexedDB Hilfsfunktionen (NEU - keine bestehenden Funktionen geändert) =====
+async function initIndexedDB() {
+  try {
+    if (!window.indexedDB) {
+      console.warn('❌ IndexedDB nicht verfügbar - Memory-Modus');
+      return false;
+    }
+
+    console.log(`🔄 IndexedDB wird initialisiert: ${DB_NAME}`);
+    
+    return new Promise((resolve) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      
+      request.onerror = (event) => {
+        console.error('❌ IndexedDB Fehler:', event);
+        resolve(false);
+      };
+      
+      request.onsuccess = (event) => {
+        db = request.result;
+        console.log(`✅ IndexedDB erfolgreich geöffnet: ${DB_NAME}`);
+        console.log('📊 Verfügbare Object Stores:', [...db.objectStoreNames]);
+        resolve(true);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        console.log('🔧 IndexedDB Upgrade/Ersteinrichtung...');
+        const database = event.target.result;
+        
+        if (!database.objectStoreNames.contains(STORE_NAME)) {
+          const store = database.createObjectStore(STORE_NAME, { 
+            keyPath: 'id',
+            autoIncrement: true 
+          });
+          store.createIndex('name', 'name', { unique: false });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+          console.log(`✅ Object Store '${STORE_NAME}' erstellt`);
+        }
+      };
+    });
+  } catch (error) {
+    console.error('❌ IndexedDB Init-Fehler:', error);
+    return false;
+  }
+}
+
+async function loadSavedRecordings() {
+  if (!db) return;
+  
+  try {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.getAll();
+    
+    return new Promise((resolve) => {
+      request.onsuccess = () => {
+        const dbRecordings = request.result || [];
+        console.log(`📦 ${dbRecordings.length} Aufnahmen aus IndexedDB geladen`);
+        
+        const convertedRecordings = dbRecordings.map(dbRec => {
+          const blob = new Blob([dbRec.audioData], { type: dbRec.mimeType });
+          const url = URL.createObjectURL(blob);
+          
+          return {
+            id: dbRec.id,
+            url: url,
+            blob: blob,
+            timestamp: dbRec.timestamp,
+            name: dbRec.name,
+            mimeType: dbRec.mimeType,
+            waveformData: dbRec.waveformData || [],
+            isPersistent: true,
+            dbId: dbRec.id
+          };
+        });
+        
+        if (convertedRecordings.length > 0) {
+          // RecordingCounter basierend auf geladenen IDs setzen
+          const maxId = Math.max(...convertedRecordings.map(r => r.id));
+          recordingCounter = maxId;
+          
+          // Geladene Aufnahmen zum Array hinzufügen
+          recordings.push(...convertedRecordings);
+          updateRecordingsList();
+          updateExportButton(); // Export-Button aktualisieren
+          
+          console.log(`✅ ${convertedRecordings.length} Aufnahmen wiederhergestellt`);
+        }
+        
+        resolve(convertedRecordings.length);
+      };
+      
+      request.onerror = () => {
+        console.log('Fehler beim Laden aus IndexedDB');
+        resolve(0);
+      };
+    });
+  } catch (error) {
+    console.log('Fehler beim Laden der Aufnahmen:', error);
+    return 0;
   }
 }
 
@@ -561,8 +785,68 @@ function addRecordingToList(blob, customName = null) {
     waveformData: [...waveformData]
   };
   
+  // IndexedDB Speicherung (optional, non-blocking)
+  if (db) {
+    console.log(`💾 Versuche Aufnahme "${recording.name}" in IndexedDB zu speichern...`);
+    try {
+      // FileReader ERST verwenden, dann Transaction
+      const reader = new FileReader();
+      reader.onload = function() {
+        // JETZT erst die Transaction erstellen
+        try {
+          const transaction = db.transaction([STORE_NAME], 'readwrite');
+          const store = transaction.objectStore(STORE_NAME);
+          
+          const dataToStore = {
+            name: recording.name,
+            timestamp: recording.timestamp,
+            mimeType: recording.mimeType,
+            waveformData: recording.waveformData,
+            audioData: reader.result,
+            size: recording.blob.size
+          };
+          
+          console.log('📤 Daten für IndexedDB vorbereitet:', {
+            name: dataToStore.name,
+            size: dataToStore.size,
+            audioDataSize: dataToStore.audioData.byteLength
+          });
+          
+          const request = store.add(dataToStore);
+          
+          request.onsuccess = () => {
+            console.log(`✅ Aufnahme "${recording.name}" erfolgreich in IndexedDB gespeichert (ID: ${request.result})`);
+            recording.isPersistent = true;
+            recording.dbId = request.result;
+            updateRecordingsList(); // UI aktualisieren mit Icon
+          };
+          
+          request.onerror = (event) => {
+            console.error('❌ IndexedDB Speicherung fehlgeschlagen:', event);
+            recording.isPersistent = false;
+          };
+          
+        } catch (transactionError) {
+          console.error('❌ Transaction-Fehler:', transactionError);
+        }
+      };
+      
+      reader.onerror = (event) => {
+        console.error('❌ Fehler beim Lesen der Blob-Daten:', event);
+      };
+      
+      reader.readAsArrayBuffer(blob);
+      
+    } catch (error) {
+      console.error('❌ IndexedDB Fehler beim Speichern:', error);
+    }
+  } else {
+    console.warn('⚠️ IndexedDB nicht verfügbar - Aufnahme nur im Memory');
+  }
+  
   recordings.push(recording);
   updateRecordingsList();
+  updateExportButton(); // Export-Button aktualisieren
   
   // Aktueller Player
   document.getElementById("audioPlayback").src = url;
@@ -575,9 +859,13 @@ function updateRecordingsList() {
   
   recordings.forEach(recording => {
     const listItem = document.createElement('li');
+    
+    // Einfaches Icon für persistente Aufnahmen
+    const icon = recording.isPersistent ? '💾 ' : '';
+    
     listItem.innerHTML = `
       <div style="display: flex; align-items: center; gap: 10px; margin: 5px 0;">
-        <span><strong>${recording.name}</strong> - ${recording.timestamp}</span>
+        <span>${icon}<strong>${recording.name}</strong> - ${recording.timestamp}</span>
         <button onclick="playRecording(${recording.id})" style="padding: 5px 10px;">Abspielen</button>
         <button onclick="downloadRecording(${recording.id})" style="padding: 5px 10px;">Download</button>
         <button onclick="deleteRecording(${recording.id})" style="padding: 5px 10px; background-color: #ff4444; color: white;">Löschen</button>
@@ -797,9 +1085,32 @@ function downloadRecording(id) {
 function deleteRecording(id) {
   const index = recordings.findIndex(r => r.id === id);
   if (index > -1) {
-    URL.revokeObjectURL(recordings[index].url);
+    const recording = recordings[index];
+    
+    // Aus IndexedDB löschen falls persistent
+    if (recording.isPersistent && recording.dbId && db) {
+      try {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(recording.dbId);
+        
+        request.onsuccess = () => {
+          console.log(`✅ Aufnahme "${recording.name}" aus IndexedDB gelöscht`);
+        };
+        
+        request.onerror = () => {
+          console.log('Fehler beim Löschen aus IndexedDB');
+        };
+      } catch (error) {
+        console.log('IndexedDB Löschung fehlgeschlagen:', error);
+      }
+    }
+    
+    // Blob URL freigeben und aus Memory-Array entfernen
+    URL.revokeObjectURL(recording.url);
     recordings.splice(index, 1);
     updateRecordingsList();
+    updateExportButton(); // Export-Button aktualisieren
   }
 }
 
@@ -1002,6 +1313,34 @@ function getNoteSymbol(noteValue) {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
   setupCanvas();
+  
+  // IndexedDB initialisieren und gespeicherte Aufnahmen laden
+  initIndexedDB().then(async (dbReady) => {
+    if (dbReady) {
+      console.log('IndexedDB bereit für persistente Speicherung');
+      
+      // Gespeicherte Aufnahmen laden
+      const loadedCount = await loadSavedRecordings();
+      
+      if (loadedCount > 0) {
+        // Status-Meldung für 3 Sekunden anzeigen
+        const statusElement = document.getElementById('recordingStatus');
+        const originalText = statusElement.textContent;
+        const originalColor = statusElement.style.color;
+        
+        statusElement.textContent = `📦 ${loadedCount} Aufnahmen wiederhergestellt`;
+        statusElement.style.color = '#3498db';
+        
+        setTimeout(() => {
+          statusElement.textContent = originalText;
+          statusElement.style.color = originalColor;
+        }, 3000);
+      }
+    }
+  }).catch(() => {
+    console.log('IndexedDB nicht verfügbar - Memory-Modus');
+  });
+  
   loadAudioDevices(); // Audio-Geräte beim Start laden
   
   document.getElementById("startBtn").addEventListener("click", startRecording);
@@ -1161,6 +1500,9 @@ document.addEventListener('DOMContentLoaded', () => {
       updateBPM(currentBPM - 1);
     }
   });
+  
+  // Export-Button Event Listener
+  document.getElementById("exportAllBtn").addEventListener("click", exportAllRecordings);
   
   // Window Resize Event für responsive Canvas
   window.addEventListener('resize', () => {

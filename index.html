@@ -109,6 +109,9 @@
     <div class="recordings-layout">
       <div class="recordings-list">
         <ul id="recordingsList"></ul>
+        <div class="recordings-footer">
+          <button id="exportAllBtn" class="export-all-btn" disabled>📦 Alle exportieren</button>
+        </div>
       </div>
       <div class="audio-player-section">
         <audio id="audioPlayback" controls></audio>
@@ -116,6 +119,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
