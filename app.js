@@ -550,7 +550,7 @@ async function startRecording() {
         echoCancellation: false,
         noiseSuppression: false,
         autoGainControl: false,
-        sampleRate: 48000
+        sampleRate: 44100
       };
       
       // Gerät-ID hinzufügen, falls ein spezifisches Gerät ausgewählt wurde
@@ -566,7 +566,7 @@ async function startRecording() {
       
       // Audio Context für Echtzeit-Analyse und WAV-Aufnahme
       audioContext = new (window.AudioContext || window.webkitAudioContext)({
-        sampleRate: 48000
+        sampleRate: 44100
       });
       const source = audioContext.createMediaStreamSource(stream);
       

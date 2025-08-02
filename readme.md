@@ -17,7 +17,7 @@ Eine professionelle Progressive Web App für Musikaufnahmen mit fortschrittliche
 ## 🎯 Features
 
 ### 🎤 Audio-Aufnahme
-- **High-Quality WAV Recording**: 48kHz Aufnahmen mit 16-bit PCM Encoding
+- **High-Quality WAV Recording**: 44,1kHz Aufnahmen mit 16-bit PCM Encoding
 - **Dual AudioContext**: Separate Kontexte für Aufnahme und Metronom
 - **Echtzeitmonitoring**: Live-Waveform mit visueller Pegelanzeige
 - **Geräteauswahl**: Unterstützung für professionelle USB Audio Interfaces
@@ -62,8 +62,8 @@ JSZip Library       → ZIP-Erstellung für Bulk-Export
 
 ### Dual AudioContext System
 ```javascript
-// Aufnahme-Context: 48kHz für High-Quality Recording
-audioContext = new AudioContext({ sampleRate: 48000 });
+// Aufnahme-Context: 44,1kHz für High-Quality Recording
+audioContext = new AudioContext({ sampleRate: 44100 });
 
 // Metronom-Context: Separater Context für unabhängige Wiedergabe
 metronomeAudioContext = new AudioContext();
