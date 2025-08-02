@@ -1,6 +1,6 @@
 {
-  "name": "Audioaufnahme",
-  "short_name": "Recorder",
+  "name": "Ideenschmiede",
+  "short_name": "Ideenschmiede",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#000000",
