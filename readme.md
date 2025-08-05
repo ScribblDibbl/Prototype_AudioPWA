@@ -117,6 +117,20 @@ Mikrofon Input → MediaStreamSource → GainNode → Analyser → ScriptProcess
 
 ## 🚀 Installation & Setup
 
+### Einfachste Installation (Empfohlen):
+**Direkt über GitHub Pages verwenden:**
+```
+https://scribbldibbl.github.io/Prototype_AudioPWA/
+```
+✅ Funktioniert sofort auf allen Geräten  
+✅ PWA-Installation auf Desktop und Mobile möglich  
+✅ HTTPS aktiviert - alle Features verfügbar  
+✅ Kein lokaler Server erforderlich  
+
+---
+
+### Lokale Entwicklung:
+
 ### 1. Dateien herunterladen
 ```bash
 git clone [repository-url]
@@ -141,9 +155,24 @@ http://localhost:8000
 ```
 
 ### 4. PWA Installation (optional)
+
+**Zur App navigieren:**  
+🌐 **https://scribbldibbl.github.io/Prototype_AudioPWA/**
+
+#### Desktop (Chrome/Edge/Firefox):
 - Chrome: Adressleiste → Install Icon
-- Safari: Share → Add to Home Screen
 - Edge: App Menu → Install this site as an app
+
+#### iPhone/iPad (Safari):
+1. Safari öffnen und zur App navigieren
+2. **Share-Button** antippen (□↗ Symbol)
+3. **"Zum Home-Bildschirm"** auswählen
+4. App-Name bestätigen → **"Hinzufügen"**
+5. App-Icon erscheint auf dem Home-Bildschirm
+
+#### Android (Chrome):
+- Chrome Menu → "App installieren" oder
+- Install-Banner folgen wenn angezeigt
 
 ## 🛠 Funktionalitäten
 
@@ -321,14 +350,6 @@ const newWidth = Math.max(280, Math.min(availableWidth, 800));
 - **Firefox**: 85+ (setSinkId teilweise limitiert)
 - **Edge**: 88+ (alle Features)
 - **Safari**: 14+ (IndexedDB manchmal limitiert)
-
-### Feature-Matrix
-| Feature | Chrome | Firefox | Edge | Safari |
-|---------|--------|---------|------|--------|
-| Web Audio API | ✅ | ✅ | ✅ | ✅ |
-| IndexedDB | ✅ | ✅ | ✅ | ⚠️ |
-| setSinkId | ✅ | ⚠️ | ✅ | ❌ |
-| PWA Install | ✅ | ⚠️ | ✅ | ✅ |
 
 ### Fallback-Strategien
 - **IndexedDB Fehler**: Memory-only Modus
