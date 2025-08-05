@@ -15,7 +15,7 @@ let recordingStartTime = 0;
 let currentStream = null;
 let audioChunks = []; // Für WAV-Aufnahme
 let gainNode = null; // Für Gain-Kontrolle
-let inputGain = 1.0; // Standard-Gain (100%)
+let inputGain = 2.5; // Mobile-optimierter Standard-Gain (entspricht 100% auf der UI)
 let selectedDeviceId = null; // Ausgewähltes Audio-Eingabegerät
 let selectedOutputId = null; // Ausgewähltes Audio-Ausgabegerät
 let availableDevices = []; // Liste verfügbarer Audio-Eingabegeräte
@@ -1440,14 +1440,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Gain Slider Event Listener
   document.getElementById("gainSlider").addEventListener("input", (e) => {
     const gainPercent = parseInt(e.target.value);
-    inputGain = gainPercent / 100; // Konvertiere zu 0.0 - 2.0 Range
+    
+    // Mobile-optimierte Gain-Kurve: Bei 50% schon guter Pegel, bei 100% starke Verstärkung
+    // Exponential-Kurve für bessere mobile Kompatibilität
+    const normalizedGain = gainPercent / 100; // 0.0 - 1.0
+    const exponentialFactor = 2.5; // Verstärkung bei hohen Werten
+    inputGain = Math.pow(normalizedGain, 0.6) * exponentialFactor; // 0.0 - 2.5 Range
     
     // Update Gain-Node falls aktiv
     if (gainNode) {
       gainNode.gain.value = inputGain;
     }
     
-    // Update Anzeige
+    // Update Anzeige (bleibt optisch gleich)
     document.getElementById("gainValue").textContent = gainPercent + '%';
     
     // Farbkodierung der Anzeige
