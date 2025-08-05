@@ -1458,6 +1458,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
+  // Number input button handlers für mobile Geräte
+  document.querySelectorAll('.number-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetId = e.target.dataset.target;
+      const input = document.getElementById(targetId);
+      const isPlus = e.target.classList.contains('number-btn-plus');
+      const isMinus = e.target.classList.contains('number-btn-minus');
+      
+      if (input) {
+        const min = parseInt(input.min) || 0;
+        const max = parseInt(input.max) || 100;
+        let currentValue = parseInt(input.value) || 0;
+        
+        if (isPlus && currentValue < max) {
+          input.value = currentValue + 1;
+        } else if (isMinus && currentValue > min) {
+          input.value = currentValue - 1;
+        }
+        
+        // Trigger input event für bestehende Handler
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+  });
+
   // Metronom Event Listeners
   document.getElementById("metronomeToggle").addEventListener("click", () => {
     if (metronomeActive) {

@@ -40,19 +40,29 @@
     <div class="bpm-section">
       <h3>Metronom</h3>
       <div class="metronome-controls">
-        <div class="bpm-row">
-          <input type="number" id="bpmInput" min="40" max="200" value="120" class="metronome-input">
-          <span class="input-label">BPM</span>
-        </div>
-        
         <div class="time-signature-row">
           <select id="noteValueSelect" class="metronome-select">
             <option value="2">♩ Halbe</option>
             <option value="4" selected>♪ Viertel</option>
             <option value="8">♫ Achtel</option>
           </select>
-          
-          <input type="number" id="beatLengthInput" min="1" max="19" value="4" class="beat-input">
+        </div>
+        
+        <div class="bpm-row">
+          <div class="number-input-group">
+            <button class="number-btn number-btn-minus" data-target="bpmInput">−</button>
+            <input type="number" id="bpmInput" min="40" max="200" value="120" class="metronome-input">
+            <button class="number-btn number-btn-plus" data-target="bpmInput">+</button>
+          </div>
+          <span class="input-label">BPM</span>
+        </div>
+        
+        <div class="beats-row">
+          <div class="number-input-group">
+            <button class="number-btn number-btn-minus" data-target="beatLengthInput">−</button>
+            <input type="number" id="beatLengthInput" min="1" max="19" value="4" class="beat-input">
+            <button class="number-btn number-btn-plus" data-target="beatLengthInput">+</button>
+          </div>
           <span class="input-label">Schläge</span>
         </div>
         
@@ -110,10 +120,9 @@
           <button id="exportAllBtn" class="export-all-btn" disabled>📦 Alle exportieren</button>
         </div>
       </div>
-      <div class="audio-player-section">
-        <audio id="audioPlayback" controls></audio>
-      </div>
     </div>
+    <!-- Hidden audio player für Playback-Funktionalität -->
+    <audio id="audioPlayback" style="display: none;" controls></audio>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
