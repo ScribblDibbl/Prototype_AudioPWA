@@ -864,11 +864,16 @@ function updateRecordingsList() {
     const icon = recording.isPersistent ? '💾 ' : '';
     
     listItem.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px; margin: 5px 0;">
-        <span>${icon}<strong>${recording.name}</strong> - ${recording.timestamp}</span>
-        <button onclick="playRecording(${recording.id})" style="padding: 5px 10px;">Abspielen</button>
-        <button onclick="downloadRecording(${recording.id})" style="padding: 5px 10px;">Download</button>
-        <button onclick="deleteRecording(${recording.id})" style="padding: 5px 10px; background-color: #ff4444; color: white;">Löschen</button>
+      <div class="recording-item">
+        <div class="recording-info">
+          <span class="filename">${icon}${recording.name}</span>
+          <span class="timestamp">${recording.timestamp}</span>
+        </div>
+        <div class="recording-buttons">
+          <button onclick="playRecording(${recording.id})" class="recording-btn play-btn">▶</button>
+          <button onclick="downloadRecording(${recording.id})" class="recording-btn download-btn">⬇</button>
+          <button onclick="deleteRecording(${recording.id})" class="recording-btn delete-btn">🗑</button>
+        </div>
       </div>
     `;
     list.appendChild(listItem);

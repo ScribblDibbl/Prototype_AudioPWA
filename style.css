@@ -575,6 +575,57 @@ select:focus, input:focus {
   color: #f1f5f9;
   width: 100%;
   overflow: hidden;
+  justify-content: space-between;
+}
+
+.recording-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.recording-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.recording-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  background: rgba(71, 85, 105, 0.8);
+  color: #f1f5f9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.recording-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.play-btn:hover {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.download-btn:hover {
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+}
+
+.delete-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
 }
 
 .recording-item .filename {
@@ -762,6 +813,58 @@ select:focus, input:focus {
   #recordingsList li {
     padding: 15px;
     margin: 12px 0;
+  }
+}
+
+/* Very narrow screens (PWA installations can be narrower than browsers) */
+@media (max-width: 400px) {
+  .main-container {
+    padding: 15px 8px;
+  }
+  
+  .controls {
+    gap: 8px;
+  }
+  
+  .recording-buttons {
+    gap: 4px;
+  }
+  
+  .recording-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  .recording-item {
+    gap: 8px;
+  }
+  
+  .waveform-canvas {
+    min-height: 60px;
+  }
+  
+  select {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  
+  .time-display {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 20px;
+  }
+  
+  .recording-info {
+    font-size: 13px;
+  }
+  
+  .timestamp,
+  .filename {
+    font-size: 12px;
   }
 }
 
