@@ -1456,19 +1456,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gainNode) {
       gainNode.gain.value = inputGain;
     }
-    
-    // Update Anzeige (bleibt optisch gleich)
-    document.getElementById("gainValue").textContent = gainPercent + '%';
-    
-    // Farbkodierung der Anzeige
-    const gainValueElement = document.getElementById("gainValue");
-    if (gainPercent > 90) {
-      gainValueElement.style.color = '#e74c3c'; // Rot bei sehr hohem Gain
-    } else if (gainPercent > 80) {
-      gainValueElement.style.color = '#f39c12'; // Orange bei hohem Gain
-    } else {
-      gainValueElement.style.color = '#27ae60'; // Grün bei normalem Gain
-    }
   });
   
   // Metronom Event Listeners
